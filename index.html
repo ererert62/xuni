@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Плейлист</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #0f172a;
+      color: #e2e8f0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      transition: background 1.5s ease;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 960px;
+      background: rgba(15, 23, 42, 0.92);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: 0 25px 80px rgba(0,0,0,0.5);
+      transition: border-color 1.5s ease;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 18px 24px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .header-icon {
+      width: 42px;
+      height: 42px;
+      background: var(--accent-bg, rgba(245, 158, 11, 0.12));
+      color: var(--accent, #f59e0b);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      flex-shrink: 0;
+      transition: all 1.5s ease;
+    }
+
+    .header-text h1 { font-size: 1.15rem; font-weight: 700; color: #fff; }
+    .header-text p { font-size: 0.72rem; color: #94a3b8; margin-top: 1px; }
+
+    .header-input {
+      display: flex;
+      gap: 8px;
+      flex: 1;
+      max-width: 360px;
+      margin-left: auto;
+    }
+
+    .header-input input {
+      flex: 1;
+      background: rgba(30, 41, 59, 0.5);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px;
+      padding: 9px 14px;
+      font-size: 0.78rem;
+      color: #e2e8f0;
+      outline: none;
+      font-family: inherit;
+    }
+
+    .header-input input::placeholder { color: #475569; }
+    .header-input input:focus { border-color: var(--accent, #f59e0b); }
+
+    .header-input button {
+      background: var(--accent, #f59e0b);
+      border: none;
+      color: #0f172a;
+      padding: 9px 18px;
+      border-radius: 10px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      flex-shrink: 0;
+      font-family: inherit;
+      transition: all 0.2s;
+    }
+
+    .header-input button:hover { opacity: 0.85; }
+
+    .body {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0;
+      padding: 20px;
+    }
+
+    @media (min-width: 768px) {
+      .body { grid-template-columns: 2fr 1fr; gap: 20px; }
+    }
+
+    .player-col { display: flex; flex-direction: column; gap: 0; }
+
+    .player-frame {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16/9;
+      border-radius: 16px;
+      overflow: hidden;
+      background: #000;
+      border: 2px solid rgba(255,255,255,0.06);
+      box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+      transition: border-color 1.5s ease;
+    }
+
+    .player-frame iframe {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+
+    .progress-wrap {
+      height: 4px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 2px;
+      cursor: pointer;
+      margin-top: 12px;
+      position: relative;
+      -webkit-user-select: none;
+      user-select: none;
+      transition: height 0.1s;
+    }
+
+    .progress-wrap:active { height: 8px; }
+
+    .progress-fill {
+      height: 100%;
+      background: var(--accent, #f59e0b);
+      border-radius: 2px;
+      width: 0%;
+      transition: width 0.3s linear, background 1.5s ease;
+      position: relative;
+    }
+
+    .progress-fill::after {
+      content: '';
+      position: absolute;
+      right: -5px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 10px;
+      height: 10px;
+      background: #fff;
+      border-radius: 50%;
+      opacity: 0;
+      box-shadow: 0 0 6px rgba(0,0,0,0.4);
+      transition: opacity 0.15s;
+    }
+
+    .progress-wrap:active .progress-fill::after { opacity: 1; }
+
+    .progress-time {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.65rem;
+      color: #64748b;
+      margin-top: 6px;
+    }
+
+    .now-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 12px;
+      padding: 10px 0;
+    }
+
+    .now-bar .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent, #f59e0b);
+      flex-shrink: 0;
+      animation: pulse 2s ease-in-out infinite;
+      transition: background 1.5s ease;
+    }
+
+    @keyframes pulse {
+      0%,100% { box-shadow: 0 0 0 0 rgba(245,158,11,0.4); }
+      50% { box-shadow: 0 0 0 4px rgba(245,158,11,0); }
+    }
+
+    .now-bar .info { flex: 1; min-width: 0; }
+
+    .now-label {
+      font-size: 0.6rem;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--accent, #f59e0b);
+      font-weight: 600;
+      transition: color 1.5s ease;
+    }
+
+    .now-title {
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .now-ch {
+      font-size: 0.7rem;
+      color: #94a3b8;
+      margin-top: 1px;
+    }
+
+    .nav-btns {
+      display: flex;
+      gap: 8px;
+    }
+
+    .nav-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.04);
+      color: #e2e8f0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.15s;
+      flex-shrink: 0;
+    }
+
+    .nav-btn:hover { background: rgba(255,255,255,0.08); }
+    .nav-btn:active { transform: scale(0.92); }
+
+    .list-col {
+      display: flex;
+      flex-direction: column;
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 16px;
+      background: rgba(15, 23, 42, 0.5);
+      overflow: hidden;
+      max-height: 420px;
+      transition: border-color 1.5s ease;
+    }
+
+    .list-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 14px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      flex-shrink: 0;
+    }
+
+    .list-head h2 {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--accent, #f59e0b);
+      transition: color 1.5s ease;
+    }
+
+    .count {
+      font-size: 0.65rem;
+      color: #64748b;
+      background: rgba(255,255,255,0.05);
+      padding: 3px 10px;
+      border-radius: 20px;
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .tracks {
+      flex: 1;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 6px;
+    }
+
+    .tracks::-webkit-scrollbar { width: 3px; }
+    .tracks::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 2px; }
+
+    .trk {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 10px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.15s;
+      border: 1px solid transparent;
+      margin-bottom: 2px;
+    }
+
+    .trk:active { transform: scale(0.98); }
+    .trk:hover { background: rgba(255,255,255,0.04); }
+
+    .trk.on {
+      background: hsla(var(--hue, 38), 50%, 50%, 0.1);
+      border-color: hsla(var(--hue, 38), 50%, 50%, 0.25);
+    }
+
+    .trk-num {
+      font-size: 0.75rem;
+      color: #64748b;
+      width: 20px;
+      text-align: center;
+      flex-shrink: 0;
+      font-weight: 500;
+    }
+
+    .trk.on .trk-num { color: var(--accent, #f59e0b); font-weight: 600; }
+
+    .trk-body { flex: 1; min-width: 0; }
+
+    .trk-name {
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: #e2e8f0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .trk.on .trk-name { color: var(--accent, #f59e0b); }
+
+    .trk-ch {
+      font-size: 0.65rem;
+      color: #64748b;
+      margin-top: 2px;
+    }
+
+    .eq { display: inline-flex; gap: 2px; align-items: flex-end; height: 12px; }
+    .eq span { width: 2px; background: var(--accent, #f59e0b); border-radius: 1px; animation: eq .7s ease-in-out infinite alternate; transition: background 1.5s ease; }
+    .eq span:nth-child(1) { height: 4px; }
+    .eq span:nth-child(2) { height: 8px; animation-delay: .15s; }
+    .eq span:nth-child(3) { height: 3px; animation-delay: .3s; }
+    @keyframes eq { to { height: 12px; } }
+
+    .ld { text-align: center; padding: 30px; color: #64748b; font-size: 0.8rem; }
+    .sp { width: 22px; height: 22px; border: 2px solid #1e293b; border-top-color: var(--accent, #f59e0b); border-radius: 50%; animation: sp .7s linear infinite; margin: 0 auto 8px; transition: border-top-color 1.5s ease; }
+    @keyframes sp { to { transform: rotate(360deg); } }
+
+    .gradient-overlay {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: -1;
+      transition: background 1.5s ease;
+    }
+  </style>
+</head>
+<body>
+
+<div class="gradient-overlay" id="gradient"></div>
+
+<div class="card">
+
+  <div class="header">
+    <div class="header-icon">&#9835;</div>
+    <div class="header-text">
+      <h1>Медиаплеер</h1>
+      <p>YouTube плейлист</p>
+    </div>
+    <div class="header-input">
+      <input id="urlInput" type="text" placeholder="Ссылка на видео или плейлист...">
+      <button onclick="loadUrl()">Открыть</button>
+    </div>
+  </div>
+
+  <div class="body">
+    <div class="player-col">
+
+      <div class="player-frame">
+        <div id="player"></div>
+      </div>
+
+      <div class="progress-wrap" id="progressBar" onclick="seek(event)" ontouchstart="seek(event)">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+
+      <div class="progress-time">
+        <span id="curTime">0:00</span>
+        <span id="durTime">0:00</span>
+      </div>
+
+      <div class="now-bar">
+        <div class="dot"></div>
+        <div class="info">
+          <div class="now-label">Сейчас играет</div>
+          <div class="now-title" id="nowTitle">Выбери трек</div>
+          <div class="now-ch" id="nowCh"></div>
+        </div>
+        <div class="nav-btns">
+          <div class="nav-btn" onclick="prevTrack()">&#9664;</div>
+          <div class="nav-btn" onclick="nextTrack()">&#9654;</div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="list-col">
+      <div class="list-head">
+        <h2>&#127925; Треки</h2>
+        <span class="count" id="count">&mdash;</span>
+      </div>
+      <div class="tracks" id="tracklist">
+        <div class="ld"><div class="sp"></div>Загрузка...</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+var PL = 'PLtaWp3G4TfjfDXerdbMzBwfRCXcJbly7w';
+var player, ready = false, curIdx = -1, videoIds = [];
+
+var tag = document.createElement('script');
+tag.src = 'https://www.youtube.com/iframe_api';
+document.head.appendChild(tag);
+
+function onYouTubeIframeAPIReady() {
+  player = new YT.Player('player', {
+    playerVars: {
+      listType: 'playlist',
+      list: PL,
+      autoplay: 1,
+      controls: 0,
+      modestbranding: 1,
+      rel: 0,
+      iv_load_policy: 3,
+      playsinline: 1,
+      disablekb: 1,
+      fs: 0
+    },
+    events: {
+      onReady: function() {
+        ready = true;
+        videoIds = player.getPlaylist() || [];
+        document.getElementById('count').textContent = videoIds.length;
+        buildList();
+        sync();
+        startProgress();
+      },
+      onStateChange: function(e) {
+        if (e.data === YT.PlayerState.PLAYING) sync();
+        if (e.data === YT.PlayerState.ENDED) {
+          var next = curIdx + 1;
+          if (next < videoIds.length) player.playVideoAt(next);
+        }
+      }
+    }
+  });
+}
+
+function startProgress() {
+  setInterval(function() {
+    if (!ready) return;
+    try {
+      var cur = player.getCurrentTime() || 0;
+      var dur = player.getDuration() || 0;
+      var pct = dur > 0 ? (cur / dur * 100) : 0;
+      document.getElementById('progressFill').style.width = pct + '%';
+      document.getElementById('curTime').textContent = fmtTime(cur);
+      document.getElementById('durTime').textContent = fmtTime(dur);
+    } catch(e) {}
+  }, 500);
+}
+
+function seek(e) {
+  if (!ready) return;
+  e.preventDefault();
+  var bar = document.getElementById('progressBar');
+  var rect = bar.getBoundingClientRect();
+  var x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+  var pct = Math.max(0, Math.min(1, x / rect.width));
+  var dur = player.getDuration() || 0;
+  player.seekTo(pct * dur, true);
+  document.getElementById('progressFill').style.width = (pct * 100) + '%';
+}
+
+function fmtTime(s) {
+  var m = Math.floor(s / 60);
+  var sec = Math.floor(s % 60);
+  return m + ':' + (sec < 10 ? '0' : '') + sec;
+}
+
+function sync() {
+  try {
+    curIdx = player.getPlaylistIndex();
+    var d = player.getVideoData();
+    if (d && d.title) {
+      document.getElementById('nowTitle').textContent = d.title;
+      document.getElementById('nowCh').textContent = d.author || '';
+    }
+    highlight();
+    updateTheme(curIdx);
+  } catch(e) {}
+}
+
+function highlight() {
+  document.querySelectorAll('.trk').forEach(function(el, i) {
+    var isOn = i === curIdx;
+    el.classList.toggle('on', isOn);
+    if (!isOn) { el.style.background = ''; el.style.borderColor = ''; }
+    var n = el.querySelector('.trk-num');
+    if (n) n.innerHTML = isOn
+      ? '<span class="eq"><span></span><span></span><span></span></span>'
+      : (i + 1);
+  });
+  var active = document.getElementById('trk' + curIdx);
+  if (active) active.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function buildList() {
+  document.getElementById('tracklist').innerHTML = videoIds.map(function(id, i) {
+    return '<div class="trk" id="trk' + i + '" onclick="go(' + i + ')">' +
+      '<div class="trk-num" id="nn' + i + '">' + (i + 1) + '</div>' +
+      '<div class="trk-body"><div class="trk-name" id="nm' + i + '">Загрузка...</div><div class="trk-ch" id="ch' + i + '"></div></div>' +
+      '</div>';
+  }).join('');
+  for (var i = 0; i < videoIds.length; i++) fetchTitle(i);
+}
+
+function go(idx) {
+  if (!ready) return;
+  player.playVideoAt(idx);
+  curIdx = idx;
+  sync();
+}
+
+function prevTrack() {
+  if (!ready) return;
+  var prev = (curIdx - 1 + videoIds.length) % videoIds.length;
+  go(prev);
+}
+
+function nextTrack() {
+  if (!ready) return;
+  var next = (curIdx + 1) % videoIds.length;
+  go(next);
+}
+
+function fetchTitle(i) {
+  if (i < 0 || i >= videoIds.length) return;
+  var nm = document.getElementById('nm' + i);
+  var ch = document.getElementById('ch' + i);
+  if (!nm) return;
+  fetch('https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=' + videoIds[i] + '&format=json')
+    .then(function(r) { if (!r.ok) throw 0; return r.json(); })
+    .then(function(d) {
+      if (nm) nm.textContent = d.title || '';
+      if (ch) ch.textContent = d.author_name || '';
+    })
+    .catch(function() {
+      if (nm) nm.textContent = 'Трейк ' + (i + 1);
+    });
+}
+
+function loadUrl() {
+  var url = document.getElementById('urlInput').value.trim();
+  if (!url) return;
+  if (url.includes('list=')) {
+    var m = url.match(/[?&]list=([^&#]+)/);
+    if (m && ready) {
+      PL = m[1];
+      player.loadPlaylist({ list: PL });
+      setTimeout(function() {
+        videoIds = player.getPlaylist() || [];
+        document.getElementById('count').textContent = videoIds.length;
+        buildList();
+      }, 2000);
+    }
+  } else {
+    var vid = getVid(url);
+    if (vid && ready) player.loadVideoById(vid);
+  }
+}
+
+function getVid(url) {
+  var m = url.match(/^.*(youtu\.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/);
+  return (m && m[2] && m[2].length === 11) ? m[2] : null;
+}
+
+document.getElementById('urlInput').addEventListener('keypress', function(e) {
+  if (e.key === 'Enter') loadUrl();
+});
+
+function updateTheme(idx) {
+  if (idx < 0 || idx >= videoIds.length) return;
+  var vid = videoIds[idx];
+  var url = 'https://i.ytimg.com/vi/' + vid + '/hqdefault.jpg';
+
+  var img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.onload = function() {
+    try {
+      var c = document.createElement('canvas');
+      c.width = 48; c.height = 27;
+      var ctx = c.getContext('2d');
+      ctx.drawImage(img, 0, 0, 48, 27);
+      var data = ctx.getImageData(0, 0, 48, 27).data;
+
+      var rSum = 0, gSum = 0, bSum = 0, count = 0;
+      for (var p = 0; p < data.length; p += 16) {
+        rSum += data[p]; gSum += data[p+1]; bSum += data[p+2]; count++;
+      }
+      var r = Math.round(rSum / count);
+      var g = Math.round(gSum / count);
+      var b = Math.round(bSum / count);
+
+      applyColor(r, g, b);
+    } catch(e) {
+      applyFallback(vid);
+    }
+  };
+  img.onerror = function() { applyFallback(vid); };
+  img.src = url;
+}
+
+function applyFallback(vid) {
+  var h = vid.charCodeAt(0) * 37 + vid.charCodeAt(1) * 13;
+  var hue = h % 360;
+  applyColorFromHue(hue, 50);
+}
+
+function applyColor(r, g, b) {
+  var hsl = rgbToHsl(r, g, b);
+  var hue = hsl[0];
+  var sat = Math.max(hsl[1] * 1.8, 35);
+  applyColorFromHue(hue, sat);
+}
+
+function applyColorFromHue(hue, sat) {
+  document.getElementById('gradient').style.background =
+    'linear-gradient(135deg, hsl(' + hue + ',' + Math.min(sat, 45) + '%, 8%) 0%, hsl(' + ((hue + 30) % 360) + ',' + Math.min(sat, 40) + '%, 12%) 100%)';
+
+  var accent = 'hsl(' + hue + ',' + Math.min(sat + 15, 80) + '%, 60%)';
+  var accentBg = 'hsla(' + hue + ',' + Math.min(sat + 15, 80) + '%, 60%, 0.12)';
+
+  var root = document.documentElement;
+  root.style.setProperty('--accent', accent);
+  root.style.setProperty('--accent-bg', accentBg);
+
+  document.querySelectorAll('.trk').forEach(function(el) {
+    el.style.background = '';
+    el.style.borderColor = '';
+  });
+
+  var active = document.querySelector('.trk.on');
+  if (active) {
+    active.style.background = 'hsla(' + hue + ',' + Math.min(sat + 10, 60) + '%, 50%, 0.12)';
+    active.style.borderColor = 'hsla(' + hue + ',' + Math.min(sat + 10, 60) + '%, 50%, 0.3)';
+  }
+}
+
+function rgbToHsl(r, g, b) {
+  r /= 255; g /= 255; b /= 255;
+  var max = Math.max(r, g, b), min = Math.min(r, g, b);
+  var h, s, l = (max + min) / 2;
+  if (max === min) { h = s = 0; } else {
+    var d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    if (max === r) h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
+    else if (max === g) h = ((b - r) / d + 2) / 6;
+    else h = ((r - g) / d + 4) / 6;
+  }
+  return [Math.round(h * 360), Math.round(s * 100), Math.round(l * 100)];
+}
+
+function esc(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+</script>
+</body>
+</html>
